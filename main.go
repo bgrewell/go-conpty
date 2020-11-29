@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/bgrewell/go-conpty/libconpty"
 )
 
@@ -13,7 +14,10 @@ func main() {
 	if err != nil {
 		fmt.Errorf("failed to get new ConPty: %v", err)
 	}
-	pty.Initialize()
+	err = pty.Initialize()
+	if err != nil {
+		fmt.Errorf("failed to initialize ConPty: %v", err)
+	}
 	data, err := pty.Read()
 	if err != nil {
 		fmt.Errorf("failed to read from ConPty: %v", err)

@@ -73,11 +73,11 @@ func (c *ConPty) Initialize() (err error) {
 	}
 
 	// Create process
-	return c.createProcess(err, si)
+	return c.createProcess(si)
 
 }
 
-func (c *ConPty) createProcess(err error, si *StartupInfoEx) error {
+func (c *ConPty) createProcess(si *StartupInfoEx) error {
 	cmdline, err := windows.UTF16PtrFromString(c.cmd)
 	if err != nil {
 		return err
