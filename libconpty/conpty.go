@@ -35,11 +35,11 @@ type ConPty struct {
 
 func NewConPty(cmd string, cols int16, rows int16) (conpty *ConPty, err error) {
 	conpty = &ConPty{
-		hPC:    -1,
-		ptyIn:  -1,
-		ptyOut: -1,
-		cmdIn:  -1,
-		cmdOut: -1,
+		hPC:    0,
+		ptyIn:  0,
+		ptyOut: 0,
+		cmdIn:  0,
+		cmdOut: 0,
 		cmd:    cmd,
 		consoleSize: COORD{
 			X: cols,
