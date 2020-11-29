@@ -14,10 +14,6 @@ func main() {
 	if err != nil {
 		fmt.Errorf("failed to get new ConPty: %v", err)
 	}
-	err = pty.Initialize()
-	if err != nil {
-		fmt.Errorf("failed to initialize ConPty: %v", err)
-	}
 	data, err := pty.Read()
 	if err != nil {
 		fmt.Errorf("failed to read from ConPty: %v", err)
