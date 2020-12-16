@@ -199,30 +199,28 @@ func (c *ConPty) dataAvailable() (bytesAvailable int, err error) {
 	return int(numAvail), nil
 }
 
-func (c *ConPty) Read() (data []byte, err error) {
+func (c *ConPty) Read(p []byte) (n int, err error) {
 	if avail, err := c.dataAvailable(); avail <= 0 || err != nil {
 		if err != nil {
 			return nil, err
 		}
 		return nil, nil
 	}
-	maxRead := 1024 * 8
 	numRead := uint32(0)
-	buf := make([]byte, maxRead)
-	err = windows.ReadFile(c.cmdOut, buf, &numRead, nil)
+	err = windows.ReadFile(c.cmdOut, p, &numRead, nil)
 	if err != nil {
 		return nil, err
 	}
-	return buf[:numRead], nil
+	return numRead, nil
 }
 
-func (c *ConPty) Write(data []byte) (written int32, err error) {
+func (c *ConPty) Write(p []byte) (n int, err error) {
 	numWritten := uint32(0)
-	err = windows.WriteFile(c.cmdIn, data, &numWritten, nil)
+	err = windows.WriteFile(c.cmdIn, p, &numWritten, nil)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
-	return int32(numWritten), nil
+	return int(numWritten), nil
 }
 
 func (c *ConPty) Close() {
