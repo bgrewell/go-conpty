@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/bgrewell/go-conpty/libconpty"
+	"log"
 )
 
 // main is a simple test application to check the functionality of libconpty. This is not an
@@ -12,25 +12,26 @@ func main() {
 
 	pty, err := libconpty.NewConPty("powershell.exe", 90, 60)
 	if err != nil {
-		fmt.Errorf("failed to get new ConPty: %v", err)
+		log.Fatalf("failed to get new ConPty: %v\n", err)
 	}
-	data, err := pty.Read()
+	data := make([]byte, 1024)
+	n, err := pty.Read(data)
 	if err != nil {
-		fmt.Errorf("failed to read from ConPty: %v", err)
+		log.Fatalf("failed to read from ConPty: %v\n", err)
 	} else {
-		fmt.Println(string(data))
+		fmt.Println(string(data[:n]))
 	}
 
 	_, err = pty.Write([]byte("whoami\r\n"))
 	if err != nil {
-		fmt.Errorf("failed to write to ConPty: %v", err)
+		log.Fatalf("failed to write to ConPty: %v\n", err)
 	}
 
-	data, err = pty.Read()
+	n, err = pty.Read(data)
 	if err != nil {
-		fmt.Errorf("failed to read from ConPty: %v", err)
+		log.Fatalf("failed to read from ConPty: %v\n", err)
 	} else {
-		fmt.Println(string(data))
+		fmt.Println(string(data[:n]))
 	}
 
 	pty.Close()

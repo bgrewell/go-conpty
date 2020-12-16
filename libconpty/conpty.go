@@ -82,7 +82,7 @@ func (c *ConPty) createProcess(si *StartupInfoEx) error {
 	if err != nil {
 		return err
 	}
-	c.pi = &windows.ProcessInformation{}
+	c.pi = new(windows.ProcessInformation)
 	err = windows.CreateProcess(
 		nil,                                  	// _in_opt_			LPCTSTR
 		cmdline,                              			// _Inout_opt_		LPTSTR
@@ -202,16 +202,16 @@ func (c *ConPty) dataAvailable() (bytesAvailable int, err error) {
 func (c *ConPty) Read(p []byte) (n int, err error) {
 	if avail, err := c.dataAvailable(); avail <= 0 || err != nil {
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
-		return nil, nil
+		return 0, nil
 	}
 	numRead := uint32(0)
 	err = windows.ReadFile(c.cmdOut, p, &numRead, nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	return numRead, nil
+	return int(numRead), nil
 }
 
 func (c *ConPty) Write(p []byte) (n int, err error) {
