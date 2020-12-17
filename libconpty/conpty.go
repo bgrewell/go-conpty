@@ -4,6 +4,7 @@ import (
 	"fmt"
 	. "github.com/bgrewell/go-conpty/libconpty/types"
 	"golang.org/x/sys/windows"
+	"syscall"
 	"unsafe"
 )
 
@@ -20,6 +21,8 @@ var (
 	fInitializeProcThreadAttributeList = win32.NewProc("InitializeProcThreadAttributeList")
 	fUpdateProcThreadAttribute         = win32.NewProc("UpdateProcThreadAttribute")
 	fPeekNamedPipe					   = win32.NewProc("PeekNamedPipe")
+	fGetProcessHeap					   = win32.NewProc("GetProcessHeap")
+	fHeapAlloc						   = win32.NewProc("HeapAlloc")
 )
 
 type ConPty struct {
@@ -51,7 +54,7 @@ func NewConPty(cmd string, cols int16, rows int16) (conpty *ConPty, err error) {
 }
 
 func (c *ConPty) Initialize() (err error) {
-	// Setup handles
+	// Create pipes
 	if err = c.setupPipes(); err != nil {
 		return err
 	}
@@ -87,8 +90,8 @@ func (c *ConPty) createProcess(si *StartupInfoEx) error {
 		nil,                                  	// _in_opt_			LPCTSTR
 		cmdline,                              			// _Inout_opt_		LPTSTR
 		nil,                                  // _In_opt_			LPSECURITY_ATTRIBUTES
-		nil,                                 // _In_opt_			LPSECURITY_ATTRIBUTES
-		false,                               // _In_				BOOL
+		nil,                                 // _In_opt_		LPSECURITY_ATTRIBUTES
+		false,                               // _In_			BOOL
 		windows.EXTENDED_STARTUPINFO_PRESENT, 			// _In_ 			DWORD
 		nil,                                  		// _In_opt_			LPVOID
 		nil,                                  	// _In_opt_			LPCTSTR
@@ -99,13 +102,14 @@ func (c *ConPty) createProcess(si *StartupInfoEx) error {
 		return err
 	}
 
-	event, err := windows.WaitForSingleObject(c.pi.Thread, 500)
+	//event, err := windows.WaitForSingleObject(c.pi.Thread, 500)
+	_, err = windows.WaitForSingleObject(c.pi.Thread, 5000)
 	if err != nil {
 		return err
 	}
-	if event != 0x0 {
-		fmt.Println("WaitForSingleObject returned unexpected value: %d", event)
-	}
+	//if event != 0x0 {
+	//	fmt.Println("WaitForSingleObject returned unexpected value: %d", event)
+	//}
 	return nil
 }
 
@@ -120,13 +124,21 @@ func (c *ConPty) initStartupInfoEx() (si *StartupInfoEx, err error) {
 	si.StartupInfo.Cb = uint32(unsafe.Sizeof(StartupInfoEx{}))
 	lpSize := uint32(0)
 	fInitializeProcThreadAttributeList.Call(0, 1, 0, uintptr(unsafe.Pointer(&lpSize)))
-	si.AttributeList = make([]byte, lpSize, lpSize)
-	ret, _, err := fInitializeProcThreadAttributeList.Call(uintptr(unsafe.Pointer(&si.AttributeList[0])), 1, 0,
-		uintptr(unsafe.Pointer(&lpSize)))
+
+	heap, _, err := fGetProcessHeap.Call()
+	if err != syscall.Errno(0) {
+		return nil, fmt.Errorf("Failed to get process heap: %v", err)
+	}
+	const heapZeroMem = 0x00000008
+	si.AttributeList, _, err = fHeapAlloc.Call(heap, heapZeroMem, uintptr(lpSize))
+	if err != syscall.Errno(0) {
+		return nil, fmt.Errorf("Failed to allocate space on the heap: %v", err)
+	}
+	ret, _, err := fInitializeProcThreadAttributeList.Call(uintptr(unsafe.Pointer(si.AttributeList)), 1, 0, uintptr(unsafe.Pointer(&lpSize)))
 	if ret != 1 {
 		return nil, fmt.Errorf("Failed to initialize thread attribute list: %v", err)
 	}
-	ret, _, err = fUpdateProcThreadAttribute.Call(uintptr(unsafe.Pointer(&si.AttributeList[0])),
+	ret, _, err = fUpdateProcThreadAttribute.Call(uintptr(unsafe.Pointer(si.AttributeList)),
 		0,
 		PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
 		uintptr(c.hPC),
@@ -201,14 +213,14 @@ func (c *ConPty) dataAvailable() (bytesAvailable int, err error) {
 
 func (c *ConPty) Read(p []byte) (n int, err error) {
 	if avail, err := c.dataAvailable(); avail <= 0 || err != nil {
-		if err != nil {
+		if err != nil && err != syscall.Errno(0) {
 			return 0, err
 		}
 		return 0, nil
 	}
 	numRead := uint32(0)
 	err = windows.ReadFile(c.cmdOut, p, &numRead, nil)
-	if err != nil {
+	if err != nil && err != syscall.Errno(0) {
 		return 0, err
 	}
 	return int(numRead), nil
@@ -217,7 +229,7 @@ func (c *ConPty) Read(p []byte) (n int, err error) {
 func (c *ConPty) Write(p []byte) (n int, err error) {
 	numWritten := uint32(0)
 	err = windows.WriteFile(c.cmdIn, p, &numWritten, nil)
-	if err != nil {
+	if err != nil && err != syscall.Errno(0) {
 		return 0, err
 	}
 	return int(numWritten), nil
