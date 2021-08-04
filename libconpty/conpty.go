@@ -248,8 +248,15 @@ func (c *ConPty) dataAvailable() (bytesAvailable int, err error) {
 	return int(numAvail), nil
 }
 
+func (c *ConPty) DataAvailable() bool {
+	n, err := c.dataAvailable()
+	if err != nil {
+		return false
+	}
+	return n > 0
+}
+
 func (c *ConPty) Read(p []byte) (n int, err error) {
-	// TODO: Figure out why this isn't working anymore
 	if avail, err := c.dataAvailable(); avail <= 0 || err != nil {
 		if err != nil && err != syscall.Errno(0) {
 			return 0, err
