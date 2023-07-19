@@ -23,9 +23,9 @@ var (
 	fClosePseudoConsole                = win32.NewProc("ClosePseudoConsole")
 	fInitializeProcThreadAttributeList = win32.NewProc("InitializeProcThreadAttributeList")
 	fUpdateProcThreadAttribute         = win32.NewProc("UpdateProcThreadAttribute")
-	fPeekNamedPipe					   = win32.NewProc("PeekNamedPipe")
-	fGetProcessHeap					   = win32.NewProc("GetProcessHeap")
-	fHeapAlloc						   = win32.NewProc("HeapAlloc")
+	fPeekNamedPipe                     = win32.NewProc("PeekNamedPipe")
+	fGetProcessHeap                    = win32.NewProc("GetProcessHeap")
+	fHeapAlloc                         = win32.NewProc("HeapAlloc")
 )
 
 type IOHandle struct {
@@ -96,6 +96,19 @@ func (c *ConPty) Initialize() (err error) {
 	cmd.Stdin = &IOHandle{c.ptyIn}
 	cmd.Stdout = &IOHandle{c.ptyOut}
 	cmd.Stderr = &IOHandle{c.ptyOut}
+
+	// Set console mode
+	var originalMode uint32
+	err = windows.GetConsoleMode(windows.Handle(c.ptyOut), &originalMode)
+	if err != nil {
+		fmt.Println("Failed to get console mode:", err)
+		return err
+	}
+
+	err = windows.SetConsoleMode(windows.Handle(c.ptyOut), originalMode|windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+	if err != nil {
+		return err
+	}
 
 	// Create pseudo console
 	if err = c.createPseudoConsole(); err != nil {
@@ -237,11 +250,11 @@ func (c *ConPty) dataAvailable() (bytesAvailable int, err error) {
 	var numAvail uint32
 
 	ret, _, err := fPeekNamedPipe.Call(uintptr(unsafe.Pointer(c.cmdOut)),
-									   0,
-									   0,
-									   0,
-									   uintptr(unsafe.Pointer(&numAvail)),
-									   0)
+		0,
+		0,
+		0,
+		uintptr(unsafe.Pointer(&numAvail)),
+		0)
 	if ret == 0x0 {
 		return -1, err
 	}
