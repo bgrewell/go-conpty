@@ -97,22 +97,6 @@ func (c *ConPty) Initialize() (err error) {
 	cmd.Stdout = &IOHandle{c.ptyOut}
 	cmd.Stderr = &IOHandle{c.ptyOut}
 
-	fmt.Printf("Stdin: %v\n", c.ptyIn)
-	fmt.Printf("Stdin: %v\n", c.ptyOut)
-
-	// Set console mode
-	var originalMode uint32
-	err = windows.GetConsoleMode(windows.Handle(c.ptyOut), &originalMode)
-	if err != nil {
-		fmt.Println("Failed to get console mode:", err)
-		return err
-	}
-
-	err = windows.SetConsoleMode(windows.Handle(c.ptyOut), originalMode|windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-	if err != nil {
-		return err
-	}
-
 	// Create pseudo console
 	if err = c.createPseudoConsole(); err != nil {
 		return err
@@ -230,6 +214,23 @@ func (c *ConPty) createPseudoConsole() error {
 		uintptr(c.ptyOut),
 		0,
 		uintptr(unsafe.Pointer(&c.hPC)))
+
+	fmt.Printf("Stdin: %v\n", c.ptyIn)
+	fmt.Printf("Stdin: %v\n", c.ptyOut)
+
+	// Set console mode
+	var originalMode uint32
+	err := windows.GetConsoleMode(windows.Handle(c.hPC), &originalMode)
+	if err != nil {
+		fmt.Println("Failed to get console mode:", err)
+		return err
+	}
+
+	err = windows.SetConsoleMode(windows.Handle(c.hPC), originalMode|windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+	if err != nil {
+		return err
+	}
+
 	if ret != S_OK {
 		return fmt.Errorf("CreatePseudoConsole() failed with status 0x%x", ret)
 	}
