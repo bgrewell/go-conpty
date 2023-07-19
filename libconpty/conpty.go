@@ -97,6 +97,9 @@ func (c *ConPty) Initialize() (err error) {
 	cmd.Stdout = &IOHandle{c.ptyOut}
 	cmd.Stderr = &IOHandle{c.ptyOut}
 
+	fmt.Printf("Stdin: %v\n", c.ptyIn)
+	fmt.Printf("Stdin: %v\n", c.ptyOut)
+
 	// Set console mode
 	var originalMode uint32
 	err = windows.GetConsoleMode(windows.Handle(c.ptyOut), &originalMode)
