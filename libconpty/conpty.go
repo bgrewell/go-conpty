@@ -26,6 +26,7 @@ var (
 	fPeekNamedPipe                     = win32.NewProc("PeekNamedPipe")
 	fGetProcessHeap                    = win32.NewProc("GetProcessHeap")
 	fHeapAlloc                         = win32.NewProc("HeapAlloc")
+	fGetConsoleMode                    = win32.NewProc("GetConsoleMode")
 )
 
 type IOHandle struct {
@@ -214,26 +215,24 @@ func (c *ConPty) createPseudoConsole() error {
 		uintptr(c.ptyOut),
 		0,
 		uintptr(unsafe.Pointer(&c.hPC)))
-
-	fmt.Printf("Stdin: %v\n", c.ptyIn)
-	fmt.Printf("Stdin: %v\n", c.ptyOut)
-
-	// Set console mode
-	var originalMode uint32
-	err := windows.GetConsoleMode(windows.Handle(c.hPC), &originalMode)
-	if err != nil {
-		fmt.Println("Failed to get console mode:", err)
-		return err
-	}
-
-	err = windows.SetConsoleMode(windows.Handle(c.hPC), originalMode|windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-	if err != nil {
-		return err
-	}
-
 	if ret != S_OK {
 		return fmt.Errorf("CreatePseudoConsole() failed with status 0x%x", ret)
 	}
+
+	if fGetConsoleMode.Find() != nil {
+		return fmt.Errorf("Unsupported version of Windows. GetConsoleMode not found")
+	}
+	var mode uint32
+	ret, _, _ = fGetConsoleMode.Call(
+		uintptr(unsafe.Pointer(&c.hPC)),
+		uintptr(unsafe.Pointer(&mode)),
+	)
+	if ret != S_OK {
+		return fmt.Errorf("GetConsoleMode() failed with status 0x%x", ret)
+	} else {
+		fmt.Printf("Mode: %v\n", mode)
+	}
+
 	return nil
 }
 
