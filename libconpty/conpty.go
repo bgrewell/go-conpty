@@ -27,6 +27,7 @@ var (
 	fGetProcessHeap                    = win32.NewProc("GetProcessHeap")
 	fHeapAlloc                         = win32.NewProc("HeapAlloc")
 	fGetConsoleMode                    = win32.NewProc("GetConsoleMode")
+	fSetConsoleMode                    = win32.NewProc("SetConsoleMode")
 )
 
 type IOHandle struct {
@@ -229,8 +230,18 @@ func (c *ConPty) createPseudoConsole() error {
 	)
 	if ret != S_OK {
 		return fmt.Errorf("GetConsoleMode() failed with status 0x%x", ret)
-	} else {
-		fmt.Printf("Mode: %v\n", mode)
+	}
+
+	if fGetConsoleMode.Find() != nil {
+		return fmt.Errorf("Unsupported version of Windows. SetConsoleMode not found")
+	}
+	mode = mode | windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	ret, _, _ = fSetConsoleMode.Call(
+		uintptr(unsafe.Pointer(&c.hPC)),
+		uintptr(unsafe.Pointer(&mode)),
+	)
+	if ret != S_OK {
+		return fmt.Errorf("SetConsoleMode() failed with status 0x%x", ret)
 	}
 
 	return nil

@@ -89,7 +89,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/libconpty/conpty.go</url>
-          <line>208</line>
+          <line>209</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>
