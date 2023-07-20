@@ -225,11 +225,13 @@ func (c *ConPty) createPseudoConsole() error {
 	}
 	var mode uint32
 	ret, _, _ = fGetConsoleMode.Call(
-		uintptr(unsafe.Pointer(&c.hPC)),
+		uintptr(unsafe.Pointer(&c.ptyIn)),
 		uintptr(unsafe.Pointer(&mode)),
 	)
 	if ret != S_OK {
 		return fmt.Errorf("GetConsoleMode() failed with status 0x%x", ret)
+	} else {
+		fmt.Printf("PtyIn Mode: %v\n", mode)
 	}
 
 	if fGetConsoleMode.Find() != nil {
@@ -237,7 +239,7 @@ func (c *ConPty) createPseudoConsole() error {
 	}
 	mode = mode | windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
 	ret, _, _ = fSetConsoleMode.Call(
-		uintptr(unsafe.Pointer(&c.hPC)),
+		uintptr(unsafe.Pointer(&c.ptyIn)),
 		uintptr(unsafe.Pointer(&mode)),
 	)
 	if ret != S_OK {
