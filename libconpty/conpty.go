@@ -223,55 +223,6 @@ func (c *ConPty) createPseudoConsole() error {
 	if fGetConsoleMode.Find() != nil {
 		return fmt.Errorf("Unsupported version of Windows. GetConsoleMode not found")
 	}
-	var mode uint32
-	ret, _, _ = fGetConsoleMode.Call(
-		uintptr(unsafe.Pointer(&c.ptyIn)),
-		uintptr(unsafe.Pointer(&mode)),
-	)
-	if ret != S_OK {
-		return fmt.Errorf("GetConsoleMode() failed with status 0x%x", ret)
-	} else {
-		fmt.Printf("PtyIn Mode: %v\n", mode)
-	}
-
-	if fGetConsoleMode.Find() != nil {
-		return fmt.Errorf("Unsupported version of Windows. SetConsoleMode not found")
-	}
-	mode = mode | windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
-	ret, _, _ = fSetConsoleMode.Call(
-		uintptr(unsafe.Pointer(&c.ptyIn)),
-		uintptr(unsafe.Pointer(&mode)),
-	)
-	if ret != S_OK {
-		return fmt.Errorf("SetConsoleMode() failed with status 0x%x", ret)
-	} else {
-		fmt.Printf("Set PtyIn Mode: %v\n", mode)
-	}
-
-	mode = 0
-	ret, _, _ = fGetConsoleMode.Call(
-		uintptr(unsafe.Pointer(&c.ptyOut)),
-		uintptr(unsafe.Pointer(&mode)),
-	)
-	if ret != S_OK {
-		return fmt.Errorf("GetConsoleMode() failed with status 0x%x", ret)
-	} else {
-		fmt.Printf("PtyOut Mode: %v\n", mode)
-	}
-
-	if fGetConsoleMode.Find() != nil {
-		return fmt.Errorf("Unsupported version of Windows. SetConsoleMode not found")
-	}
-	mode = mode | windows.ENABLE_VIRTUAL_TERMINAL_PROCESSING
-	ret, _, _ = fSetConsoleMode.Call(
-		uintptr(unsafe.Pointer(&c.ptyOut)),
-		uintptr(unsafe.Pointer(&mode)),
-	)
-	if ret != S_OK {
-		return fmt.Errorf("SetConsoleMode() failed with status 0x%x", ret)
-	} else {
-		fmt.Printf("Set PtyOut Mode: %v\n", mode)
-	}
 
 	return nil
 }
