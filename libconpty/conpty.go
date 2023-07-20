@@ -244,8 +244,11 @@ func (c *ConPty) createPseudoConsole() error {
 	)
 	if ret != S_OK {
 		return fmt.Errorf("SetConsoleMode() failed with status 0x%x", ret)
+	} else {
+		fmt.Printf("Set PtyIn Mode: %v\n", mode)
 	}
 
+	mode = 0
 	ret, _, _ = fGetConsoleMode.Call(
 		uintptr(unsafe.Pointer(&c.ptyOut)),
 		uintptr(unsafe.Pointer(&mode)),
